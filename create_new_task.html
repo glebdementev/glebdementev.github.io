@@ -41,6 +41,9 @@
     
     <div class="container">
         <img src="logo.png" alt="Centered Image" style="padding-bottom: 20px;"/>
+            <div class="center-align" style="width:100%;">
+              <a href="https://glebdementev.notion.site/glebdementev/TargetInsights-v0-11-0-755e4fc307bd43d7b9b2d808bbdde84d" class="blue-text">Инструкция</a>
+            </div>
         <form id="dataForm">
             <!-- API Key Field -->
             <div class="input-field">
@@ -107,7 +110,7 @@
     function submitForm(event) {
         event.preventDefault(); // Prevent the default form submission
 
-        const apiURL = 'http://127.0.0.1:8000/create-task/';
+        const apiURL = 'http://84.201.167.73:8000/create-task/';
         let formData = new FormData(document.getElementById('dataForm'));
 
         const agentChannel = document.getElementById('agent_channel').checked ? 'right' : 'left';
