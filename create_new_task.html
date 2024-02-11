@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Design Styled Page</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            background-color: #eceff1; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin-top: 100px;
+            margin-bottom: 100px;
+        }
+        .container {
+            width: 1200px;
+            background-color: #ffffff; /* White color for the rectangle */
+            border-radius: 8px;
+            box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14), 0 3px 1px -2px rgba(0,0,0,0.12), 0 1px 5px 0 rgba(0,0,0,0.2);
+            overflow: hidden;
+            padding: 30px;
+        }
+        img {
+            display: block;
+            margin: 0 auto; /* Center the image */
+            padding-top: 20px; /* Spacing from the top */
+            width: 200px; /* Adjust as needed */
+            height: auto;
+        }
+        .content {
+            padding: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+        <img src="logo.png" alt="Centered Image" style="padding-bottom: 20px;"/>
+        <form id="dataForm">
+            <!-- API Key Field -->
+            <div class="input-field">
+                <input id="api_key" type="text" class="validate" required>
+                <label for="api_key">Ваш API-ключ</label>
+            </div>
+    
+            <!-- Email Address Field -->
+            <div class="input-field">
+                <input id="email_address" type="email" class="validate" required>
+                <label for="email_address">E-mail адрес для отправки результатов</label>
+            </div>
+    
+            <!-- File Upload Field -->
+            <div class="file-field input-field">
+                <div class="btn">
+                    <span>Загрузите файл</span>
+                    <input type="file" name="file" accept=".xlsx,.mp3,.zip" required>
+                </div>
+                <div class="file-path-wrapper">
+                    <input class="file-path validate" type="text" placeholder="Допустимые форматы: .xlsx, .mp3, .zip архив .mp3 файлов">
+                </div>
+            </div>
+    
+            <!-- Toggle for Agent Channel -->
+            <div class="switch">
+                <label>
+                    Слева
+                    <input type="checkbox" id="agent_channel">
+                    <span class="lever"></span>
+                    Справа
+                </label>
+            </div>
+    
+            <!-- Dynamic Table for Questions -->
+            <table class="highlight">
+                <thead>
+                    <tr>
+                        <th>Название вопроса</th>
+                        <th>Текст вопроса</th>
+                        <th>Тип вопроса</th>
+                        <th>Допустимые ответы</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="questionsTableBody">
+                </tbody>
+            </table>
+            <button type="button" class="btn" onclick="addQuestionRow()">Добавить вопрос</button>
+    
+            <!-- Submit Button -->
+            <button type="button" class="btn" onclick="submitForm(event)">Отправить</button>
+        </form>
+        <!-- Div for API response -->
+        <div id="apiResponse" class="content"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        M.updateTextFields(); // Update text fields on load
+        addQuestionRow(); // Add an initial row for questions
+    });
+
+    function submitForm(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const apiURL = 'http://127.0.0.1:8000/create-task/';
+        let formData = new FormData(document.getElementById('dataForm'));
+
+        const agentChannel = document.getElementById('agent_channel').checked ? 'right' : 'left';
+        formData.set('agent_channel', agentChannel);
+
+        const targetEmail = document.getElementById('email_address').value; // Retrieve the target_email value
+        formData.set('target_email', targetEmail); // Include target_email in formData for submission
+
+        const questions = [...document.querySelectorAll('#questionsTableBody tr')].map(row => {
+            let q_allowed = [];
+            if (row.querySelector('.q_type').value === 'multiple_choice') {
+                let chipsInstance = M.Chips.getInstance(row.querySelector('.chips.q_allowed_chips'));
+                q_allowed = chipsInstance.chipsData.map(chip => chip.tag); // Get chip values
+            }
+            
+            return {
+                q_name: row.querySelector('.q_name').value,
+                q_content: row.querySelector('.q_content').value,
+                q_type: row.querySelector('.q_type').value,
+                q_allowed: q_allowed
+            };
+        });
+
+        formData.set('questions_json', JSON.stringify(questions));
+
+        // Construct an object to visualize what's being sent (excluding binary file data)
+        const logObject = {
+            agent_channel: agentChannel,
+            questions_json: questions,
+            // Indicate file presence rather than trying to log file data
+            file: document.getElementById('dataForm').file.value ? "File included" : "No file included"
+        };
+
+        // Log the constructed object as a JSON string
+        console.log("Data being sent to the endpoint:", JSON.stringify(logObject, null, 2));
+
+        // The rest of your fetch() call remains unchanged
+        fetch(apiURL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer testkey`,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('apiResponse').textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('apiResponse').textContent = 'Failed to fetch: ' + error.message;
+        });
+    }
+
+    function addQuestionRow() {
+        const tbody = document.getElementById('questionsTableBody');
+        const row = tbody.insertRow();
+        const cell1 = row.insertCell(0);
+        const cell2 = row.insertCell(1);
+        const cell3 = row.insertCell(2);
+        const cell4 = row.insertCell(3);
+        const cell5 = row.insertCell(4);
+
+        cell1.innerHTML = '<input type="text" required class="q_name">';
+        cell2.innerHTML = '<input type="text" required class="q_content">';
+        cell3.innerHTML = `
+            <select required class="q_type">
+                <option value="" disabled selected>Выберите...</option>
+                <option value="classify">Классификация</option>
+                <option value="multiple_choice">Множественный выбор</option>
+                <option value="open_ended">Открытый вопрос</option>
+            </select>
+        `;
+        // Changed this to a div for chips
+        cell4.innerHTML = '<div class="chips q_allowed_chips"></div>';
+        cell5.innerHTML = '<button type="button" class="btn red lighten-1" onclick="removeQuestionRow(this)">Удалить</button>';
+
+        M.FormSelect.init(cell3.querySelectorAll('select')); // Initialize Materialize select
+
+        // Listen for changes in the question type to dynamically enable chips for "Множественный выбор"
+        cell3.querySelector('select').addEventListener('change', function() {
+            const chipsContainer = row.querySelector('.chips.q_allowed_chips');
+            if (this.value === 'multiple_choice') {
+                // Initialize chips with options
+                M.Chips.init(chipsContainer, {
+                    placeholder: 'Добавьте ответы',
+                    secondaryPlaceholder: '+Ответ',
+                    onChipAdd: function(e, chip){
+                        // Additional functionality upon adding a chip can go here
+                    },
+                    onChipDelete: function(e, chip){
+                        // Additional functionality upon deleting a chip can go here
+                    }
+                });
+            } else {
+                // Clear chips if type is changed away from multiple_choice
+                let instance = M.Chips.getInstance(chipsContainer);
+                if (instance) {
+                    instance.chipsData = []; // Clear chips data
+                    instance._renderChips(); // Re-render the empty chips component
+                }
+            }
+        });
+    }
+
+    function removeQuestionRow(button) {
+        const row = button.parentElement.parentElement;
+        row.remove();
+    }
+
+    function updateSelectOnChange() {
+        // Function to update select on change
+    }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>
