@@ -110,7 +110,7 @@
     function submitForm(event) {
         event.preventDefault(); // Prevent the default form submission
 
-        const apiURL = 'http://84.201.167.73:8000/create-task/';
+        const apiURL = 'https://84.201.167.73:8000/create-task/';
         let formData = new FormData(document.getElementById('dataForm'));
 
         const agentChannel = document.getElementById('agent_channel').checked ? 'right' : 'left';
